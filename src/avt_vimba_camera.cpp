@@ -811,11 +811,6 @@ void AvtVimbaCamera::updateConfig(Config& config)
 {
   std::unique_lock<std::mutex> lock(config_mutex_);
 
-  VmbErrorType err = vimba_camera_ptr_->EndCapture();
-    if (err != VmbErrorSuccess){
-      ROS_ERROR_STREAM(api_.errorCodeToMessage(err));
-    }
-
   if (streaming_)
   {
     stopImaging();
