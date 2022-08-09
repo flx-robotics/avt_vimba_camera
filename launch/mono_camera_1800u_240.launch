@@ -1,0 +1,128 @@
+<launch>
+    <arg name="name" default="camera" doc="The name of the camera"/>
+    <arg name="guid" default="" doc="The GUID for the camera to connect to"/>
+    <arg name="frame_id" default="$(arg name)" doc="The frame id of the camera"/>
+    <arg name="camera_info_url" default="file://$(find avt_vimba_camera)/calibrations/calibration_example.yaml"/>
+    <arg name="print_all_features" default="false" doc="Show all camera features on the console during startup"/>
+
+    <!-- Acquisition -->
+    <arg name="acquisition_mode" default="Continuous"/>
+    <arg name="acquisition_framerate_enable" default="false"/>
+    <!-- Trigger -->
+    <arg name="acquisition_rate" default="5"/>
+    <arg name="trigger_source" default="Line0"/>
+    <arg name="trigger_mode" default="On"/>
+    <arg name="trigger_selector" default="FrameStart"/>
+    <arg name="trigger_activation" default="FallingEdge"/>
+    <arg name="trigger_delay" default="0.0"/>
+    <!-- Exposure -->
+    <arg name="exposure" default="11810"/>
+    <arg name="exposure_auto" default="Off"/>
+    <arg name="exposure_auto_alg" default="FitRange"/>
+    <arg name="exposure_auto_tol" default="5"/>
+    <arg name="exposure_auto_max" default="50000"/>
+    <arg name="exposure_auto_min" default="10000"/>
+    <!-- Gain -->
+    <arg name="gain" default="0"/>
+    <arg name="gain_auto" default="Continuous"/>
+    <arg name="gain_auto_adjust_tol" default="5"/>
+    <arg name="gain_auto_max" default="32"/>
+    <arg name="gain_auto_min" default="0"/>
+    <arg name="gain_auto_outliers" default="0"/>
+    <arg name="gain_auto_rate" default="50"/>
+    <arg name="gain_auto_target" default="50"/>
+    <!-- White Balance -->
+    <arg name="balance_ratio_abs" default="1.0"/>
+    <arg name="balance_ratio_selector" default="Red"/>
+    <arg name="whitebalance_auto" default="Continuous"/>
+    <arg name="whitebalance_auto_tol" default="5"/>
+    <arg name="whitebalance_auto_rate" default="100"/>
+    <!-- Binning and Decimation -->
+    <arg name="binning_x" default="1"/>
+    <arg name="binning_y" default="1"/>
+    <arg name="decimation_x" default="1"/>
+    <arg name="decimation_y" default="1"/>
+    <!-- ROI -->
+    <arg name="width" default="1920"/>
+    <arg name="height" default="1440"/>
+    <arg name="offset_x" default="0"/>
+    <arg name="offset_y" default="0"/>
+    <!-- Pixel Format -->
+    <arg name="pixel_format" default="BayerRG8"/>
+    <!-- Bandwidth -->
+    <arg name="stream_bytes_per_second" default="450000000"/>
+    <!-- PTP Synchronization -->
+    <arg name="ptp_mode" default="Off"/>
+    <!-- GPIO -->
+    <arg name="sync_in_selector" default="SyncIn1"/>
+    <arg name="sync_out_polarity" default="Normal"/>
+    <arg name="sync_out_selector" default="SyncOut1"/>
+    <arg name="sync_out_source" default="GPO"/>
+    <!-- USB GPIO -->
+    <arg name="line_selector" default="Line0"/>
+    <arg name="line_mode" default="Input"/>
+
+    <include file="$(find avt_vimba_camera)/launch/mono_camera.launch">
+        <arg name="name" value="$(arg name)"/>
+        <arg name="guid" value="$(arg guid)"/>
+        <arg name="frame_id" value="$(arg frame_id)"/>
+        <arg name="camera_info_url" value="$(arg camera_info_url)"/>
+        <arg name="print_all_features" value="$(arg print_all_features)"/>
+
+        <arg name="acquisition_mode" value="$(arg acquisition_mode)"/>
+        <arg name="acquisition_rate" value="$(arg acquisition_rate)"/>
+        <arg name="acquisition_framerate_enable" value="$(arg acquisition_framerate_enable)"/>
+
+        <arg name="trigger_source" value="$(arg trigger_source)"/>
+        <arg name="trigger_mode" value="$(arg trigger_mode)"/>
+        <arg name="trigger_selector" value="$(arg trigger_selector)"/>
+        <arg name="trigger_activation" value="$(arg trigger_activation)"/>
+        <arg name="trigger_delay" value="$(arg trigger_delay)"/>
+
+        <arg name="exposure" value="$(arg exposure)"/>
+        <arg name="exposure_auto" value="$(arg exposure_auto)"/>
+        <arg name="exposure_auto_alg" value="$(arg exposure_auto_alg)"/>
+        <arg name="exposure_auto_tol" value="$(arg exposure_auto_tol)"/>
+        <arg name="exposure_auto_max" value="$(arg exposure_auto_max)"/>
+        <arg name="exposure_auto_min" value="$(arg exposure_auto_min)"/>
+
+        <arg name="gain" value="$(arg gain)"/>
+        <arg name="gain_auto" value="$(arg gain_auto)"/>
+        <arg name="gain_auto_adjust_tol" value="$(arg gain_auto_adjust_tol)"/>
+        <arg name="gain_auto_max" value="$(arg gain_auto_max)"/>
+        <arg name="gain_auto_min" value="$(arg gain_auto_min)"/>
+        <arg name="gain_auto_outliers" value="$(arg gain_auto_outliers)"/>
+        <arg name="gain_auto_rate" value="$(arg gain_auto_rate)"/>
+        <arg name="gain_auto_target" value="$(arg gain_auto_target)"/>
+
+        <arg name="balance_ratio_abs" value="$(arg balance_ratio_abs)"/>
+        <arg name="balance_ratio_selector" value="$(arg balance_ratio_selector)"/>
+        <arg name="whitebalance_auto" value="$(arg whitebalance_auto)"/>
+        <arg name="whitebalance_auto_tol" value="$(arg whitebalance_auto_tol)"/>
+        <arg name="whitebalance_auto_rate" value="$(arg whitebalance_auto_rate)"/>
+
+        <arg name="binning_x" value="$(arg binning_x)"/>
+        <arg name="binning_y" value="$(arg binning_y)"/>
+        <arg name="decimation_x" value="$(arg decimation_x)"/>
+        <arg name="decimation_y" value="$(arg decimation_y)"/>
+
+        <arg name="width" value="$(arg width)"/>
+        <arg name="height" value="$(arg height)"/>
+        <arg name="offset_x" value="$(arg offset_x)"/>
+        <arg name="offset_y" value="$(arg offset_y)"/>
+
+        <arg name="pixel_format" value="$(arg pixel_format)"/>
+
+        <arg name="stream_bytes_per_second" value="$(arg stream_bytes_per_second)"/>
+
+        <arg name="ptp_mode" value="$(arg ptp_mode)"/>
+
+        <arg name="sync_in_selector" value="$(arg sync_in_selector)"/>
+        <arg name="sync_out_polarity" value="$(arg sync_out_polarity)"/>
+        <arg name="sync_out_selector" value="$(arg sync_out_selector)"/>
+        <arg name="sync_out_source" value="$(arg sync_out_source)"/>
+
+        <arg name="line_selector" value="$(arg line_selector)"/>
+        <arg name="line_mode" value="$(arg line_mode)"/>
+    </include>
+</launch>

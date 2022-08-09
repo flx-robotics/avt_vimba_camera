@@ -136,8 +136,8 @@ private:
   bool getFeatureValue(const std::string& feature_str, T& val);
   bool getFeatureValue(const std::string& feature_str, std::string& val);
   template <typename Vimba_Type, typename Std_Type>
-  void configureFeature(const std::string& feature_str, const Vimba_Type& val_in, Std_Type& val_out);
-  void configureFeature(const std::string& feature_str, const std::string& val_in, std::string& val_out);
+  bool configureFeature(const std::string& feature_str, const Vimba_Type& val_in, Std_Type& val_out);
+  bool configureFeature(const std::string& feature_str, const std::string& val_in, std::string& val_out);
   bool runCommand(const std::string& command_str);
   void printAllCameraFeatures(const CameraPtr& camera);
 

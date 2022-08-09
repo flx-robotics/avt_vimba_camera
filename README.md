@@ -48,6 +48,8 @@ For example, the Mako camera technical manual is available [here](https://cdn.al
 
 ### Receive Buffer Size
 
+**Network buffer size**
+
 It is also recommended to increase your network receive buffer size.
 By default, Ubuntu uses `212992`.
 
@@ -67,6 +69,16 @@ Once you find a value that works for you, you can make the change permanent (per
 ```
 net.core.rmem_max=26214400
 ```
+
+**USBFS memory buffer size**
+
+For use with multiple USB cameras it is recommended to increase USBFS buffer size, by default, Ubuntu uses `16 MByte`.
+
+a) Temporary solution (will be reset after reboot)
+
+    sudo sh -c 'echo 1024 > /sys/module/usbcore/parameters/usbfs_memory_mb'
+
+b) Permanent solution (requires editing bootloader configuration): [official documentation page 6](https://cdn.alliedvision.com/fileadmin/content/documents/products/cameras/various/appnote/USB/Setting_Up_USB_Vision_Systems.pdf#%5B%7B%22num%22%3A1%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C55%2C204%2C0%5D)
 
 ### Camera Settings in General
 

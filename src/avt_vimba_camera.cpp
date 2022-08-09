@@ -203,7 +203,7 @@ void AvtVimbaCamera::stopImaging()
     if (err == VmbErrorSuccess)
     {
       diagnostic_msg_ = "Acquisition stopped";
-      ROS_INFO_STREAM("Acquisition stoppped ...");
+      ROS_INFO_STREAM("Acquisition stopped ...");
       streaming_ = false;
       camera_state_ = IDLE;
     }
@@ -386,6 +386,14 @@ VmbErrorType AvtVimbaCamera::setFeatureValue(const std::string& feature_str, con
               if (available)
               {
                 err = vimba_feature_ptr->SetValue(val);
+                if (err == VmbErrorSuccess)
+                {
+                  ROS_DEBUG_STREAM("Success setting feature " << feature_str << " value " << val);
+                }
+                else
+                {
+                  ROS_WARN_STREAM("Failure setting " << feature_str << ": " << api_.errorCodeToMessage(err));
+                }
               }
               else
               {
@@ -401,6 +409,14 @@ VmbErrorType AvtVimbaCamera::setFeatureValue(const std::string& feature_str, con
           else
           {
             err = vimba_feature_ptr->SetValue(val);
+            if (err == VmbErrorSuccess)
+            {
+              ROS_DEBUG_STREAM("Success setting feature " << feature_str << " value " << val);
+            }
+            else
+            {
+              ROS_WARN_STREAM("Failure setting " << feature_str << ": " << api_.errorCodeToMessage(err));
+            }
           }
         }
         else
@@ -558,55 +574,61 @@ bool AvtVimbaCamera::getFeatureValue(const std::string& feature_str, std::string
 // Tries to configure a camera feature.
 // Updates the config value passed in if a different config is in use by the camera.
 template <typename Vimba_Type, typename Std_Type>
-void AvtVimbaCamera::configureFeature(const std::string& feature_str, const Vimba_Type& val_in, Std_Type& val_out)
+bool AvtVimbaCamera::configureFeature(const std::string& feature_str, const Vimba_Type& val_in, Std_Type& val_out)
 {
   Vimba_Type actual_value;
 
   VmbErrorType return_value = setFeatureValue(feature_str, val_in);
-  if (return_value == VmbErrorSuccess || return_value == VmbErrorInvalidValue)
+  if (return_value != VmbErrorSuccess)
   {
-    getFeatureValue(feature_str, actual_value);
-    if (val_in == actual_value)
-    {
-      ROS_INFO_STREAM(" - " << feature_str << " set to " << actual_value);
-    }
-    else
-    {
-      ROS_WARN_STREAM(" - Tried to set " << feature_str << " to " << val_in << " but the camera used " << actual_value
-                                         << " instead");
-      val_out = static_cast<Std_Type>(actual_value);
-    }
+    ROS_WARN_STREAM("Configuring feature " << feature_str << " failed because: "
+                                           << api_.errorCodeToMessage(return_value));
+    return false;
+  }
+
+  // double check that the feature was set by asking the camera about actual value
+  getFeatureValue(feature_str, actual_value);
+  if (val_in == actual_value)
+  {
+    ROS_INFO_STREAM(" - " << feature_str << " set to " << actual_value);
+  // sometimes actual value is not exactly set (eg. ExposureTime instead of 18000 is set to 18002). That is ok.
   }
   else
   {
-    val_out = static_cast<Std_Type>(val_in);
+    ROS_WARN_STREAM(" - Tried to set " << feature_str << " to " << val_in << " but the camera used " << actual_value
+                                      << " instead");
+    val_out = static_cast<Std_Type>(actual_value);
   }
+  return true;
 }
 
 // Overloaded for strings, template specialization doesn't currently compile with GCC
-void AvtVimbaCamera::configureFeature(const std::string& feature_str, const std::string& val_in, std::string& val_out)
+bool AvtVimbaCamera::configureFeature(const std::string& feature_str, const std::string& val_in, std::string& val_out)
 {
   std::string actual_value;
 
   VmbErrorType return_value = setFeatureValue(feature_str, val_in.c_str());
-  if (return_value == VmbErrorSuccess || return_value == VmbErrorInvalidValue)
+  if (return_value != VmbErrorSuccess)
   {
-    getFeatureValue(feature_str, actual_value);
-    if (val_in == actual_value)
-    {
-      ROS_INFO_STREAM(" - " << feature_str << " set to " << actual_value);
-    }
-    else
-    {
-      ROS_WARN_STREAM(" - Tried to set " << feature_str << " to " << val_in << " but the camera used " << actual_value
-                                         << " instead");
-      val_out = actual_value;
-    }
+    ROS_WARN_STREAM("Configuring feature " << feature_str << " failed because: "
+                                           << api_.errorCodeToMessage(return_value));
+    return false;
+  }
+
+  // double check that the feature was set by asking the camera about actual value
+  getFeatureValue(feature_str, actual_value);
+  if (val_in == actual_value)
+  {
+    ROS_INFO_STREAM(" - " << feature_str << " set to " << actual_value);
+  // sometimes actual value is not exactly set (eg. ExposureTime instead of 18000 is set to 18002). That is ok.
   }
   else
   {
-    val_out = val_in;
+    ROS_WARN_STREAM(" - Tried to set " << feature_str << " to " << val_in << " but the camera used " << actual_value
+                                      << " instead");
+    val_out = actual_value;
   }
+  return true;
 }
 
 // Template function to RUN a command
@@ -789,6 +811,11 @@ void AvtVimbaCamera::updateConfig(Config& config)
 {
   std::unique_lock<std::mutex> lock(config_mutex_);
 
+  VmbErrorType err = vimba_camera_ptr_->EndCapture();
+    if (err != VmbErrorSuccess){
+      ROS_ERROR_STREAM(api_.errorCodeToMessage(err));
+    }
+
   if (streaming_)
   {
     stopImaging();
@@ -831,13 +858,19 @@ void AvtVimbaCamera::updateAcquisitionConfig(Config& config)
     ROS_INFO("Updating Acquisition and Trigger config:");
   }
 
+  if (config.acquisition_framerate_enable != config_.acquisition_framerate_enable || on_init_){
+    configureFeature("AcquisitionFrameRateEnable", config.acquisition_framerate_enable, config.acquisition_framerate_enable);
+  }
   if (config.acquisition_mode != config_.acquisition_mode || on_init_)
   {
     configureFeature("AcquisitionMode", config.acquisition_mode, config.acquisition_mode);
   }
   if (config.acquisition_rate != config_.acquisition_rate || on_init_)
   {
-    configureFeature("AcquisitionFrameRateAbs", static_cast<float>(config.acquisition_rate), config.acquisition_rate);
+    if(!configureFeature("AcquisitionFrameRateAbs", static_cast<float>(config.acquisition_rate), config.acquisition_rate)){
+      // some cameras support AcquisitionFrameRate instead of AcquisitionFrameRateAbs 
+      configureFeature("AcquisitionFrameRate", static_cast<float>(config.acquisition_rate), config.acquisition_rate);
+    }
   }
   if (config.trigger_mode != config_.trigger_mode || on_init_)
   {
@@ -857,7 +890,10 @@ void AvtVimbaCamera::updateAcquisitionConfig(Config& config)
   }
   if (config.trigger_delay != config_.trigger_delay || on_init_)
   {
-    configureFeature("TriggerDelayAbs", static_cast<float>(config.trigger_delay), config.trigger_delay);
+    if(!configureFeature("TriggerDelayAbs", static_cast<float>(config.trigger_delay), config.trigger_delay)){
+      // some cameras support TriggerDelay instead of TriggerDelayAbs 
+      configureFeature("TriggerDelay", static_cast<float>(config.trigger_delay), config.trigger_delay);
+    }
   }
   if (config.action_device_key != config_.action_device_key || on_init_)
   {
@@ -911,7 +947,10 @@ void AvtVimbaCamera::updateExposureConfig(Config& config)
 
   if (config.exposure != config_.exposure || on_init_)
   {
-    configureFeature("ExposureTimeAbs", static_cast<float>(config.exposure), config.exposure);
+    if(!configureFeature("ExposureTimeAbs", static_cast<float>(config.exposure), config.exposure)){
+      // some cameras support ExposureTime instead of ExposureTimeAbs
+      configureFeature("ExposureTime", static_cast<float>(config.exposure), config.exposure);
+    }
   }
   if (config.exposure_auto != config_.exposure_auto || on_init_)
   {
@@ -928,11 +967,11 @@ void AvtVimbaCamera::updateExposureConfig(Config& config)
   }
   if (config.exposure_auto_max != config_.exposure_auto_max || on_init_)
   {
-    configureFeature("ExposureAutoMax", static_cast<VmbInt64_t>(config.exposure_auto_max), config.exposure_auto_max);
+    configureFeature("ExposureAutoMax", static_cast<float>(config.exposure_auto_max), config.exposure_auto_max);
   }
   if (config.exposure_auto_min != config_.exposure_auto_min || on_init_)
   {
-    configureFeature("ExposureAutoMin", static_cast<VmbInt64_t>(config.exposure_auto_min), config.exposure_auto_min);
+    configureFeature("ExposureAutoMin", static_cast<float>(config.exposure_auto_min), config.exposure_auto_min);
   }
   if (config.exposure_auto_outliers != config_.exposure_auto_outliers || on_init_)
   {
@@ -1003,7 +1042,10 @@ void AvtVimbaCamera::updateWhiteBalanceConfig(Config& config)
 
   if (config.balance_ratio_abs != config_.balance_ratio_abs || on_init_)
   {
-    configureFeature("BalanceRatioAbs", static_cast<float>(config.balance_ratio_abs), config.balance_ratio_abs);
+    if(!configureFeature("BalanceRatioAbs", static_cast<float>(config.balance_ratio_abs), config.balance_ratio_abs)){
+      // some cameras support BalanceRatio instead of BalanceRatioAbs 
+      configureFeature("BalanceRatio", static_cast<float>(config.balance_ratio_abs), config.balance_ratio_abs);
+    }
   }
   if (config.balance_ratio_selector != config_.balance_ratio_selector || on_init_)
   {
@@ -1015,8 +1057,12 @@ void AvtVimbaCamera::updateWhiteBalanceConfig(Config& config)
   }
   if (config.whitebalance_auto_tol != config_.whitebalance_auto_tol || on_init_)
   {
-    configureFeature("BalanceWhiteAutoAdjustTol", static_cast<VmbInt64_t>(config.whitebalance_auto_tol),
+    if(!configureFeature("BalanceWhiteAutoAdjustTol", static_cast<VmbInt64_t>(config.whitebalance_auto_tol),
+                     config.whitebalance_auto_tol)){
+      // some cameras support BalanceWhiteAutoTolerance instead of BalanceWhiteAutoAdjustTol 
+      configureFeature("BalanceWhiteAutoTolerance", static_cast<VmbInt64_t>(config.whitebalance_auto_tol),
                      config.whitebalance_auto_tol);
+    }
   }
   if (config.whitebalance_auto_rate != config_.whitebalance_auto_rate || on_init_)
   {
@@ -1102,8 +1148,12 @@ void AvtVimbaCamera::updateBandwidthConfig(Config& config)
 
   if (config.stream_bytes_per_second != config_.stream_bytes_per_second || on_init_)
   {
-    configureFeature("StreamBytesPerSecond", static_cast<VmbInt64_t>(config.stream_bytes_per_second),
+    if(!configureFeature("StreamBytesPerSecond", static_cast<VmbInt64_t>(config.stream_bytes_per_second),
+                     config.stream_bytes_per_second)){
+      // some cameras support DeviceLinkThroughputLimit instead of StreamBytesPerSecond 
+      configureFeature("DeviceLinkThroughputLimit", static_cast<VmbInt64_t>(config.stream_bytes_per_second),
                      config.stream_bytes_per_second);
+    }
   }
 }
 
