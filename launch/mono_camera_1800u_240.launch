@@ -48,7 +48,7 @@
     <arg name="offset_x" default="0"/>
     <arg name="offset_y" default="0"/>
     <!-- Pixel Format -->
-    <arg name="pixel_format" default="BayerRG8"/>
+    <arg name="pixel_format" default="BayerGR8"/>
     <!-- Bandwidth -->
     <arg name="stream_bytes_per_second" default="450000000"/>
     <!-- PTP Synchronization -->
